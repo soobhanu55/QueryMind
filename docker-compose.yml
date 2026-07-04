@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: analytics
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Optional: containerized app service. Not needed to run the benchmarks locally
+  # (README shows running `uvicorn` directly against these two services), but useful
+  # for a production-style all-in-one `docker compose up --profile app`.
+  app:
+    build: .
+    profiles: ["app"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/analytics
+      REDIS_URL: redis://redis:6379/0
+      LLM_PROVIDER: mock
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:

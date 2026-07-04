@@ -1,0 +1,53 @@
+Count,Message,Traceback,Nodes
+70,'name',"  File ""C:\Users\bhanu\OneDrive\Desktop\Enterprise Text-to-SQL Analytics Agent\.venv\Lib\site-packages\locust\user\task.py"", line 340, in run
+    self.execute_next_task()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File ""C:\Users\bhanu\OneDrive\Desktop\Enterprise Text-to-SQL Analytics Agent\.venv\Lib\site-packages\locust\user\task.py"", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""C:\Users\bhanu\OneDrive\Desktop\Enterprise Text-to-SQL Analytics Agent\.venv\Lib\site-packages\locust\user\task.py"", line 490, in execute_task
+    task(self.user)
+    ~~~~^^^^^^^^^^^
+  File ""C:\Users\bhanu\OneDrive\Desktop\Enterprise Text-to-SQL Analytics Agent\tests\load\locustfile.py"", line 55, in ask_repeated_question
+    self._post_query(question)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File ""C:\Users\bhanu\OneDrive\Desktop\Enterprise Text-to-SQL Analytics Agent\tests\load\locustfile.py"", line 63, in _post_query
+    with self.client.post(
+         ~~~~~~~~~~~~~~~~^
+        ""/query"",
+        ^^^^^^^^^
+    ...<2 lines>...
+        name=""/query"",
+        ^^^^^^^^^^^^^^
+    ) as response:
+    ^
+  File ""C:\Users\bhanu\OneDrive\Desktop\Enterprise Text-to-SQL Analytics Agent\.venv\Lib\site-packages\locust\clients.py"", line 368, in __exit__
+    self.url = self.request_meta[""name""]
+               ~~~~~~~~~~~~~~~~~^^^^^^^^
+",local
+20,'name',"  File ""C:\Users\bhanu\OneDrive\Desktop\Enterprise Text-to-SQL Analytics Agent\.venv\Lib\site-packages\locust\user\task.py"", line 340, in run
+    self.execute_next_task()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File ""C:\Users\bhanu\OneDrive\Desktop\Enterprise Text-to-SQL Analytics Agent\.venv\Lib\site-packages\locust\user\task.py"", line 373, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""C:\Users\bhanu\OneDrive\Desktop\Enterprise Text-to-SQL Analytics Agent\.venv\Lib\site-packages\locust\user\task.py"", line 490, in execute_task
+    task(self.user)
+    ~~~~^^^^^^^^^^^
+  File ""C:\Users\bhanu\OneDrive\Desktop\Enterprise Text-to-SQL Analytics Agent\tests\load\locustfile.py"", line 60, in ask_varied_question
+    self._post_query(question)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File ""C:\Users\bhanu\OneDrive\Desktop\Enterprise Text-to-SQL Analytics Agent\tests\load\locustfile.py"", line 63, in _post_query
+    with self.client.post(
+         ~~~~~~~~~~~~~~~~^
+        ""/query"",
+        ^^^^^^^^^
+    ...<2 lines>...
+        name=""/query"",
+        ^^^^^^^^^^^^^^
+    ) as response:
+    ^
+  File ""C:\Users\bhanu\OneDrive\Desktop\Enterprise Text-to-SQL Analytics Agent\.venv\Lib\site-packages\locust\clients.py"", line 368, in __exit__
+    self.url = self.request_meta[""name""]
+               ~~~~~~~~~~~~~~~~~^^^^^^^^
+",local

@@ -1,0 +1,11 @@
+# Optional: install these ONLY if you want to wire NeMo Guardrails' conversational
+# rails on top of the fast rule-based validator (app/guardrails/rules.py).
+#
+# NeMo Guardrails is NOT used as the primary SQL-safety gate in this project because
+# it drives its own LLM/async rail pipeline (typically 100ms-1s+ per check depending
+# on config) which conflicts with the "guardrail must never add more than a few ms"
+# requirement under load. See README.md "Guardrail design decision" for the full
+# rationale. app/guardrails/nemo_adapter.py shows how to plug it in if you still want
+# an additional conversational safety layer (e.g. to catch social-engineering intent
+# in the natural-language question itself, before SQL is even generated).
+nemoguardrails==0.11.1

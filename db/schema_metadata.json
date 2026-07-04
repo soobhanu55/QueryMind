@@ -1,0 +1,103 @@
+{
+  "database": "analytics",
+  "description": "Synthetic sales/orders analytics database for a B2B/B2C hybrid retailer.",
+  "tables": {
+    "customers": {
+      "description": "One row per customer account.",
+      "synonyms": ["customer", "customers", "client", "clients", "buyer", "buyers", "account"],
+      "columns": {
+        "customer_id": {"type": "integer", "pk": true, "description": "Unique customer identifier."},
+        "name": {"type": "text", "description": "Customer full name.", "synonyms": ["customer name"]},
+        "email": {"type": "text", "description": "Customer email address."},
+        "region": {"type": "text", "description": "Customer's geographic region.",
+          "sample_values": ["North America", "Europe", "APAC", "LATAM"]},
+        "segment": {"type": "text", "description": "Customer segment/tier.",
+          "sample_values": ["Enterprise", "SMB", "Consumer"]},
+        "signup_date": {"type": "date", "description": "Date the customer account was created.",
+          "synonyms": ["signed up", "joined", "created"]}
+      }
+    },
+    "employees": {
+      "description": "Sales staff who may be attributed to orders (account executives, sales managers, SDRs).",
+      "synonyms": ["employee", "employees", "sales rep", "rep", "reps", "salesperson", "staff"],
+      "columns": {
+        "employee_id": {"type": "integer", "pk": true, "description": "Unique employee identifier."},
+        "name": {"type": "text", "description": "Employee full name."},
+        "region": {"type": "text", "description": "Employee's assigned region.",
+          "sample_values": ["North America", "Europe", "APAC", "LATAM"]},
+        "role": {"type": "text", "description": "Job role.",
+          "sample_values": ["Account Executive", "Sales Manager", "SDR"]},
+        "hire_date": {"type": "date", "description": "Date employee was hired."}
+      }
+    },
+    "products": {
+      "description": "Product catalog.",
+      "synonyms": ["product", "products", "item", "items", "sku", "goods"],
+      "columns": {
+        "product_id": {"type": "integer", "pk": true, "description": "Unique product identifier."},
+        "name": {"type": "text", "description": "Product name."},
+        "category": {"type": "text", "description": "Product category.",
+          "sample_values": ["Electronics", "Office Supplies", "Furniture", "Software"]},
+        "unit_price": {"type": "numeric", "description": "Current list price per unit.",
+          "synonyms": ["price", "list price", "cost per unit"]},
+        "unit_cost": {"type": "numeric", "description": "Internal cost per unit (for margin calculations).",
+          "synonyms": ["cost", "cogs"]}
+      }
+    },
+    "orders": {
+      "description": "One row per customer order (header). Join to order_items for line-level detail and revenue.",
+      "synonyms": ["order", "orders", "sale", "sales", "purchase", "purchases", "transaction", "transactions"],
+      "columns": {
+        "order_id": {"type": "integer", "pk": true, "description": "Unique order identifier."},
+        "customer_id": {"type": "integer", "fk": "customers.customer_id", "description": "Customer who placed the order."},
+        "employee_id": {"type": "integer", "fk": "employees.employee_id", "description": "Sales rep credited with the order (nullable)."},
+        "order_date": {"type": "date", "description": "Date the order was placed.",
+          "synonyms": ["date", "when", "order date", "placed on", "purchased on"]},
+        "status": {"type": "text", "description": "Current order status.",
+          "sample_values": ["pending", "shipped", "delivered", "cancelled", "returned"]},
+        "channel": {"type": "text", "description": "Sales channel through which the order was placed.",
+          "sample_values": ["online", "retail", "phone"]}
+      }
+    },
+    "order_items": {
+      "description": "Line items for each order. quantity * unit_price * (1 - discount_pct/100) = line revenue. Sum across an order for order revenue.",
+      "synonyms": ["order item", "order items", "line item", "line items", "order line", "revenue", "sales"],
+      "columns": {
+        "order_item_id": {"type": "integer", "pk": true, "description": "Unique line item identifier."},
+        "order_id": {"type": "integer", "fk": "orders.order_id", "description": "Parent order."},
+        "product_id": {"type": "integer", "fk": "products.product_id", "description": "Product sold on this line."},
+        "quantity": {"type": "integer", "description": "Units sold on this line.",
+          "synonyms": ["units", "units sold", "qty"]},
+        "unit_price": {"type": "numeric", "description": "Price per unit actually charged at time of sale (may differ from products.unit_price)."},
+        "discount_pct": {"type": "numeric", "description": "Discount percentage applied to this line (0-100)."}
+      }
+    },
+    "payments": {
+      "description": "Payment records for orders. An order may have zero or one payment.",
+      "synonyms": ["payment", "payments", "invoice", "invoices"],
+      "columns": {
+        "payment_id": {"type": "integer", "pk": true, "description": "Unique payment identifier."},
+        "order_id": {"type": "integer", "fk": "orders.order_id", "description": "Order this payment is for."},
+        "amount": {"type": "numeric", "description": "Amount paid.",
+          "synonyms": ["revenue", "amount paid", "payment amount"]},
+        "method": {"type": "text", "description": "Payment method.",
+          "sample_values": ["credit_card", "paypal", "bank_transfer", "invoice"]},
+        "status": {"type": "text", "description": "Payment status.",
+          "sample_values": ["paid", "failed", "refunded", "pending"]},
+        "paid_at": {"type": "timestamp", "description": "Timestamp the payment was processed."}
+      }
+    }
+  },
+  "relationships": [
+    {"from": "orders.customer_id", "to": "customers.customer_id"},
+    {"from": "orders.employee_id", "to": "employees.employee_id"},
+    {"from": "order_items.order_id", "to": "orders.order_id"},
+    {"from": "order_items.product_id", "to": "products.product_id"},
+    {"from": "payments.order_id", "to": "orders.order_id"}
+  ],
+  "metric_hints": {
+    "revenue": "Prefer SUM(order_items.quantity * order_items.unit_price * (1 - order_items.discount_pct/100.0)) joined via orders. Use payments.amount only when the question is specifically about amounts paid/collected.",
+    "order_count": "COUNT(DISTINCT orders.order_id)",
+    "average_order_value": "SUM(line revenue) / COUNT(DISTINCT orders.order_id)"
+  }
+}

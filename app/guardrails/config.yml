@@ -1,0 +1,100 @@
+# Guardrail configuration for the Text-to-SQL Analytics Agent.
+#
+# This is the authoritative, documented list of what the guardrail layer allows and
+# blocks. app/guardrails/rules.py loads this file at import time -- it is not just
+# documentation, it is the actual policy source.
+#
+# Design goal: every check here must run in well under a millisecond so the guardrail
+# never becomes the throughput bottleneck under load (see README "Guardrail design
+# decision" for why this is a hand-written rule engine rather than NeMo Guardrails).
+
+# Only statements whose parsed AST root is one of these node types may execute.
+# Everything else (INSERT/UPDATE/DELETE/DDL/procedural calls/etc.) is rejected
+# regardless of keyword casing, comments, or whitespace tricks. Note: sqlglot
+# represents "WITH cte AS (...) SELECT ..." as a Select node with a `with` clause
+# attached, not as a separate root type, so allow-listing Select alone covers CTEs.
+allowed_statement_root_types:
+  - Select
+
+# Statement keywords that are always rejected if they appear as the leading
+# keyword of a parsed statement, or anywhere in the raw SQL as defense-in-depth.
+# This is the "documented list of blocked statement types" deliverable.
+blocked_statement_keywords:
+  - DROP
+  - DELETE
+  - UPDATE
+  - ALTER
+  - TRUNCATE
+  - INSERT
+  - CREATE
+  - GRANT
+  - REVOKE
+  - ATTACH
+  - DETACH
+  - COPY
+  - VACUUM
+  - REINDEX
+  - CLUSTER
+  - EXECUTE
+  - CALL
+  - MERGE
+  - REPLACE
+  - RENAME
+  - LOCK
+  - SET
+  - RESET
+  - "DO"          # anonymous PL/pgSQL block
+  - COMMENT
+  - DISCARD
+  - LISTEN
+  - NOTIFY
+  - UNLISTEN
+  - CHECKPOINT
+  - LOAD
+  - SECURITY
+
+# Function/procedure calls that are blocked even inside an otherwise-valid SELECT,
+# because they enable DoS, file/network exfiltration, or privilege escalation.
+blocked_functions:
+  - pg_sleep
+  - pg_sleep_for
+  - pg_sleep_until
+  - pg_terminate_backend
+  - pg_cancel_backend
+  - pg_reload_conf
+  - pg_read_file
+  - pg_read_binary_file
+  - pg_ls_dir
+  - pg_stat_file
+  - lo_import
+  - lo_export
+  - dblink
+  - dblink_connect
+  - dblink_exec
+  - copy_from_program
+  - copy_to_program
+  - xp_cmdshell   # not a real Postgres function; blocked defensively for injected-dialect payloads
+
+# Schemas that must never be referenced, even via allow-listed table names,
+# to prevent catalog/metadata exfiltration.
+blocked_schemas:
+  - pg_catalog
+  - information_schema
+  - pg_toast
+
+# Raw-SQL substrings that are rejected outright regardless of AST shape. The
+# generation prompt never asks for comments, so any comment marker is treated as
+# a potential statement-smuggling attempt.
+blocked_raw_substrings:
+  - "--"
+  - "/*"
+  - ";--"
+
+# Hard cap enforced on every query regardless of what the generated SQL requests.
+# If no LIMIT is present, one is injected; if a larger LIMIT is present, it is
+# rewritten down to this value.
+max_row_limit: 500
+
+# Multiple semicolon-separated statements in a single request are always rejected
+# (stacked-query / SQL injection classic).
+allow_multiple_statements: false

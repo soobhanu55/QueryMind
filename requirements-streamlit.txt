@@ -1,0 +1,16 @@
+# Trimmed dependency set for Streamlit Community Cloud -- drops FastAPI/uvicorn
+# (unused by streamlit_app.py, which calls the pipeline modules directly) and
+# dev-only tools (locust, pytest) to keep the Cloud build fast.
+streamlit==1.40.2
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+pydantic==2.10.3
+pydantic-settings==2.7.0
+redis==5.2.1
+anthropic==0.40.0
+google-genai==2.10.0
+sqlglot==26.0.0
+python-dotenv==1.0.1
+tenacity==9.0.0
+structlog==24.4.0
+pyyaml==6.0.2
