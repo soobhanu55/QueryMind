@@ -144,6 +144,17 @@ def main():
         f"Row cap: {settings.max_result_rows}"
     )
 
+    with st.expander("\U0001f527 Debug: configuration detected (remove once secrets are confirmed working)"):
+        st.write(f"**Secret keys found in `st.secrets`:** {sorted(_secrets.keys()) if _secrets else '_(none -- st.secrets is empty)_'}")
+        masked_db = settings.database_url
+        if "@" in masked_db:
+            scheme, rest = masked_db.split("://", 1)
+            _, host_part = rest.split("@", 1)
+            masked_db = f"{scheme}://***:***@{host_part}"
+        st.write(f"**Resolved `LLM_PROVIDER`:** `{settings.llm_provider}`")
+        st.write(f"**Resolved `DATABASE_URL` (password masked):** `{masked_db}`")
+        st.write(f"**Resolved `CACHE_ENABLED`:** `{settings.cache_enabled}`")
+
     with st.sidebar:
         st.subheader("Try a question")
         for q in EXAMPLE_QUESTIONS:
