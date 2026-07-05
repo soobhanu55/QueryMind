@@ -21,10 +21,16 @@ import streamlit as st
 # otherwise beat set_page_config() to being "first" and raise StreamlitAPIException.
 st.set_page_config(page_title="Text-to-SQL Analytics Agent", page_icon="\U0001f4ca", layout="wide")
 
+_secrets_error = None
 try:
     _secrets = dict(st.secrets)
-except Exception:  # noqa: BLE001 -- no secrets.toml present (e.g. local dev with .env only)
+except FileNotFoundError:
+    # No secrets.toml at all (e.g. local dev relying solely on .env) -- expected, not an error.
     _secrets = {}
+except Exception as _exc:  # noqa: BLE001 -- surface anything else (e.g. a TOML syntax error)
+    # instead of silently falling back to defaults with no trace of why.
+    _secrets = {}
+    _secrets_error = repr(_exc)
 
 for _key in (
     "DATABASE_URL", "REDIS_URL", "CACHE_ENABLED",
@@ -145,6 +151,8 @@ def main():
     )
 
     with st.expander("\U0001f527 Debug: configuration detected (remove once secrets are confirmed working)"):
+        if _secrets_error:
+            st.error(f"st.secrets raised an error while loading (this is why nothing below is populated): {_secrets_error}")
         st.write(f"**Secret keys found in `st.secrets`:** {sorted(_secrets.keys()) if _secrets else '_(none -- st.secrets is empty)_'}")
         masked_db = settings.database_url
         if "@" in masked_db:
