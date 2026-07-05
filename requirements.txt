@@ -1,5 +1,9 @@
 fastapi==0.115.6
 uvicorn[standard]==0.32.1
+# Streamlit Cloud on this account has no UI option to point at requirements-streamlit.txt,
+# so streamlit_app.py's dependency is included here too -- harmless for the FastAPI
+# service, just an unused extra package there.
+streamlit==1.40.2
 sqlalchemy[asyncio]==2.0.36
 asyncpg==0.30.0
 pydantic>=2.12.5,<3.0.0
