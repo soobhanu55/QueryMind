@@ -16,7 +16,11 @@ class Settings(BaseSettings):
     max_result_rows: int = 500
 
     # --- cache ---
-    redis_url: str = "redis://localhost:6379/0"
+    # Empty by default -- an unset REDIS_URL means "no Redis in this deployment,
+    # use the in-memory fallback", rather than attempting (and failing) to reach
+    # a default localhost Redis that isn't guaranteed to exist. Local dev/docker-
+    # compose sets this explicitly via .env.
+    redis_url: str = ""
     cache_enabled: bool = True
     schema_cache_ttl_seconds: int = 3600
     question_cache_ttl_seconds: int = 600

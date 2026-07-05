@@ -44,9 +44,12 @@ for _key in (
 import asyncio
 import time
 
+import structlog
 from dotenv import load_dotenv
 
 load_dotenv()  # local dev fallback; no-ops if .env doesn't exist (e.g. on Cloud)
+
+logger = structlog.get_logger(__name__)
 
 from app import cache as cache_module  # noqa: E402
 from app.config import get_settings  # noqa: E402
@@ -132,12 +135,24 @@ async def run_and_cleanup(question: str) -> dict:
     # that persist across reruns -- each one is bound to whichever loop created it.
     # Reusing either from a later run's (different) loop raises "Event loop is
     # closed". Tear both down after every run so the next run recreates them fresh.
+    #
+    # Cleanup itself is wrapped defensively: a `finally` block that raises replaces
+    # whatever the `try` block returned or raised (a classic Python gotcha), so a
+    # teardown failure here must never be allowed to mask a successful query result
+    # (or a genuine error) with a misleading "Event loop is closed".
     try:
         return await run_pipeline(question)
     finally:
-        await dispose_engine()
-        if cache_module._cache_client is not None:
-            await cache_module._cache_client.close()
+        try:
+            await dispose_engine()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("db_engine_dispose_failed", error=str(exc))
+        try:
+            if cache_module._cache_client is not None:
+                await cache_module._cache_client.close()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("cache_client_close_failed", error=str(exc))
+        finally:
             cache_module._cache_client = None
 
 

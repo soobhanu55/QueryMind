@@ -66,7 +66,10 @@ class CacheClient:
         self._is_redis = False
 
     async def connect(self):
-        if not _settings.cache_enabled:
+        if not _settings.cache_enabled or not _settings.redis_url:
+            # No REDIS_URL configured at all -- skip the network attempt entirely
+            # rather than trying (and failing) to reach a default localhost Redis
+            # that was never meant to exist in this deployment.
             self._backend = _InMemoryTTLCache()
             return
         if aioredis is not None:
