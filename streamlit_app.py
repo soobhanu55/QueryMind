@@ -62,7 +62,6 @@ from app.schema_store import get_schema_store  # noqa: E402
 from app.summarizer import summarize  # noqa: E402
 
 EXAMPLE_QUESTIONS = [
-    "What is the total revenue by region?",
     "How many orders were cancelled?",
     "Show the top 5 customers by revenue.",
     "List all customers in the APAC region.",
