@@ -1,4 +1,5 @@
 # Enterprise Text-to-SQL Analytics Agent
+Live Demo : https://enterprise-text-to-sql-analytics-agent.streamlit.app/
 
 A production-style service that turns natural-language analytics questions into
 guardrailed, read-only SQL against Postgres, executes it safely, and returns
