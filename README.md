@@ -1,9 +1,16 @@
-# Enterprise Text-to-SQL Analytics Agent
-Live Demo : https://enterprise-text-to-sql-analytics-agent.streamlit.app/
+# QueryMind
+
+Live Demo : https://enterprise-text-to-sql-analytics-agent.streamlit.app/ (Streamlit Cloud free tier — may need ~30s to wake up if idle)
 
 A production-style service that turns natural-language analytics questions into
 guardrailed, read-only SQL against Postgres, executes it safely, and returns
 results plus a natural-language summary.
+
+## Demo
+
+Terminal recording of the real unit test suite (the DB-independent tests — guardrails, mock provider, schema store — 28/28 passing; 3 additional tests need a live Postgres connection and aren't included here):
+
+![Terminal recording of the unit test suite](docs/demo.gif)
 
 ```
 NL question
