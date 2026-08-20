@@ -12,6 +12,12 @@ Terminal recording of the real unit test suite (the DB-independent tests — gua
 
 ![Terminal recording of the unit test suite](docs/demo.gif)
 
+UI walkthrough against the actual deployed Streamlit Cloud app (the Live Demo link above): picking a suggested question, seeing it land in the input box, and running it through the real guardrail + Gemini SQL-generation pipeline —
+
+![UI walkthrough of the live Streamlit Cloud app](docs/demo_ui.gif)
+
+The pipeline runs for real (guardrail passes, `gemini` generates SQL), but the query execution itself fails with a real, disclosed infrastructure error: the hosted free-tier Supabase Postgres instance this deployment points at (`postgres.fvyqlrqvmydmteqiudlf`) is unreachable — consistent with Supabase's free tier auto-pausing a project after a period of inactivity. The error is surfaced to the user as-is rather than hidden or faked; reviving it just needs the Supabase project un-paused and doesn't require any code change.
+
 ```
 NL question
     |
