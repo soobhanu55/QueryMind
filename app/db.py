@@ -51,6 +51,10 @@ async def session_scope() -> AsyncIterator[AsyncSession]:
 async def dispose_engine():
     global _engine, _session_factory
     if _engine is not None:
-        await _engine.dispose()
-        _engine = None
-        _session_factory = None
+        try:
+            await _engine.dispose()
+        finally:
+            # Always forget the engine: Streamlit runs each question in a new event loop, and an
+            # engine left over after a failed dispose is bound to the closed loop ("Event loop is closed").
+            _engine = None
+            _session_factory = None
