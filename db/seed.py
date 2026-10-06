@@ -9,6 +9,7 @@ Usage:
 """
 import argparse
 import asyncio
+import csv
 import datetime
 import os
 import random
@@ -166,6 +167,20 @@ async def seed(conn: asyncpg.Connection, n_customers: int, n_employees: int, n_o
     print("Done seeding.")
 
 
+async def seed_wallets(conn):
+    """Loads db/wallets.csv (Aave wallet features and risk scores, see ml/evaluate_wallet_risk.py)."""
+    path = os.path.join(os.path.dirname(__file__), "wallets.csv")
+    with open(path, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    ints = {"n_tx", "active_days", "n_borrows", "n_assets", "prior_liquidations", "risk_score", "was_liquidated"}
+    cols = list(rows[0].keys())
+    data = [tuple(int(float(r[c])) if c in ints else r[c] if c in ("wallet_id", "risk_band") else float(r[c]) for c in cols)
+            for r in rows]
+    await conn.executemany(
+        f"INSERT INTO wallets ({', '.join(cols)}) VALUES ({', '.join(f'${i + 1}' for i in range(len(cols)))})", data)
+    print(f"  loaded {len(data)} wallets")
+
+
 async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--customers", type=int, default=500)
@@ -190,10 +205,11 @@ async def main():
         if row_count and row_count > 0:
             print("Tables already contain data; truncating before reseeding.")
             await conn.execute(
-                "TRUNCATE payments, order_items, orders, products, employees, customers RESTART IDENTITY CASCADE"
+                "TRUNCATE wallets, payments, order_items, orders, products, employees, customers RESTART IDENTITY CASCADE"
             )
 
         await seed(conn, args.customers, args.employees, args.orders)
+        await seed_wallets(conn)
     finally:
         await conn.close()
 

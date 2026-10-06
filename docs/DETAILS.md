@@ -152,7 +152,7 @@ Row comparison tolerates column supersets (`SELECT *` vs a narrower reference
 projection) and a legitimate row-cap truncation (a filter that matches more rows
 than the safety cap is not penalized as "wrong" -- see `rows_match` in the script).
 
-**Measured result** (`reports/accuracy_report.json`, mock provider, 60 questions):
+**Measured result on the 60 sales questions** (the 14 wallet-domain questions added later score 13/14; overall 68/74 = 91.9%, see `reports/accuracy_report.json`, mock provider):
 
 | Category | Accuracy |
 |---|---|

@@ -11,13 +11,37 @@ Turns plain-English analytics questions into guardrailed, read-only SQL against 
 
 | Check | Result |
 |---|---|
-| Overall accuracy (60-question benchmark) | **91.7%** (55/60) |
-| — simple lookups | 100% |
-| — aggregations | 96.7% |
-| — joins (hardest category) | 73.3% |
+| Overall accuracy (74-question benchmark) | **91.9%** (68/74) |
+| — sales schema only (60 questions) | 91.7% (55/60): simple 100%, aggregations 96.7%, joins 73.3% |
+| — wallet-risk schema (14 questions) | 92.9% (13/14); written by the parser's author, so optimistic |
 | Adversarial prompts blocked | **48/48** |
 | Guardrail latency | avg 0.10ms, max 2.85ms |
 | Load test (150 users): throughput / p50 latency | +50.6% RPM / -51.6% |
+
+## Wallet risk (absorbs the former ChainScore and WalletGuard repos)
+
+A second domain next to the sales schema: **Aave V2 wallets on Polygon**. `ml/wallet_features.py` turns 100,000 real
+transactions into point-in-time features per borrower (only transactions before a cutoff), and
+`ml/evaluate_wallet_risk.py` trains and tests forward in time against **real liquidations** (train on June, test on
+July onward; 1,247 borrowers, 36 liquidated, 2.9% base rate). Results (`docs/wallet_risk_eval.md`):
+
+| Scorer | ROC-AUC (95% CI) |
+|---|---|
+| random | 0.52 (0.42 to 0.63) |
+| ChainScore's heuristic score (on USD values) | 0.55 (0.45 to 0.65) |
+| WalletGuard-style heuristic | 0.53 (0.45 to 0.62) |
+| "was liquidated before" rule | 0.70 (0.59 to 0.81) |
+| logistic regression (served) | 0.71 (0.62 to 0.80) |
+| random forest | 0.79 (0.70 to 0.87) |
+
+The two original hand-weighted scores are no better than chance at predicting liquidations. The old ChainScore
+R-squared of 0.45 measured how well a forest recovers its own hand-made score, which is circular. With 36 positives
+the intervals overlap, so "forest beats logistic" is not established; the logistic model is served because it needs no
+ML runtime. Data: the 91 MB Aave file linked from the old ChainScore README (third-party, not committed).
+
+- **Postgres:** `wallets` table (1,625 borrowers, features + `risk_score` + `risk_band`), loaded by `db/seed.py`; ask in plain English ("how many wallets are in the high risk band?", "top 5 wallets by borrowed amount").
+- **`POST /score`:** features in, risk score 0-1000, band and probability out. Pure-Python serving of an exported logistic model (`app/risk/model.json`); validated inputs; relative risk, not a calibrated default rate.
+- `pip install -r requirements-ml.txt` and `python ml/evaluate_wallet_risk.py <transactions.json>` reproduce the table.
 
 ## How it works
 

@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from app.cache import get_cache
 from app.db import dispose_engine, get_engine
 from app.logging_config import configure_logging
-from app.routers import health, query
+from app.routers import health, query, score
 
 configure_logging()
 
@@ -27,6 +27,7 @@ app = FastAPI(
 
 app.include_router(health.router, tags=["health"])
 app.include_router(query.router, tags=["query"])
+app.include_router(score.router, tags=["score"])
 
 
 @app.exception_handler(Exception)

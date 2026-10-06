@@ -19,6 +19,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Optional
 
+from app.llm import wallet_parser
 from app.llm.base import NL2SQLProvider, SQLGenerationResult
 from app.schema_store import get_schema_store
 
@@ -419,6 +420,9 @@ class MockNL2SQLProvider(NL2SQLProvider):
         store = get_schema_store()
         q = " " + re.sub(r"[^a-z0-9$.\s]", " ", question.lower()) + " "
         q = re.sub(r"\s+", " ", q)
+
+        if wallet_parser.WALLET_RE.search(q):
+            return wallet_parser.generate(q.strip())
 
         agg = _detect_agg(q)
         topn = _detect_topn(q)

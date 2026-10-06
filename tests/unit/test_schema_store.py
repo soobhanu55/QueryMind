@@ -4,7 +4,7 @@ from app.schema_store import get_schema_store
 def test_loads_all_sample_schema_tables():
     store = get_schema_store()
     assert set(store.table_names()) == {
-        "customers", "employees", "products", "orders", "order_items", "payments",
+        "customers", "employees", "products", "orders", "order_items", "payments", "wallets",
     }
 
 

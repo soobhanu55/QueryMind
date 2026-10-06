@@ -1,6 +1,7 @@
 -- Enterprise Text-to-SQL Analytics Agent -- sample sales/orders schema
 -- A synthetic but realistic OLTP-ish schema used as the target for NL->SQL generation.
 
+DROP TABLE IF EXISTS wallets CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;
 DROP TABLE IF EXISTS order_items CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
@@ -58,6 +59,29 @@ CREATE TABLE payments (
     method          TEXT NOT NULL,           -- 'credit_card', 'paypal', 'bank_transfer', 'invoice'
     status          TEXT NOT NULL,           -- 'paid', 'failed', 'refunded', 'pending'
     paid_at         TIMESTAMP
+);
+
+-- Aave V2 (Polygon) wallets with point-in-time features and a model liquidation-risk score; built by
+-- ml/evaluate_wallet_risk.py from public on-chain transactions, loaded from db/wallets.csv by db/seed.py.
+CREATE TABLE wallets (
+    wallet_id            TEXT PRIMARY KEY,
+    n_tx                 INTEGER NOT NULL,
+    active_days          INTEGER NOT NULL,
+    span_days            NUMERIC(10, 2) NOT NULL,
+    days_since_last_tx   NUMERIC(10, 2) NOT NULL,
+    deposit_usd          NUMERIC(18, 2) NOT NULL,
+    borrow_usd           NUMERIC(18, 2) NOT NULL,
+    repay_usd            NUMERIC(18, 2) NOT NULL,
+    redeem_usd           NUMERIC(18, 2) NOT NULL,
+    borrow_to_deposit    NUMERIC(12, 4) NOT NULL,
+    repay_to_borrow      NUMERIC(12, 4) NOT NULL,
+    n_borrows            INTEGER NOT NULL,
+    n_assets             INTEGER NOT NULL,
+    stable_borrow_share  NUMERIC(6, 4) NOT NULL,
+    prior_liquidations   INTEGER NOT NULL,
+    risk_score           INTEGER NOT NULL,       -- 0-1000, higher = more likely to be liquidated
+    risk_band            TEXT NOT NULL,          -- 'low', 'medium', 'high'
+    was_liquidated       INTEGER NOT NULL        -- 1 if the wallet was liquidated at least once in the data
 );
 
 CREATE INDEX idx_orders_customer_id ON orders(customer_id);
