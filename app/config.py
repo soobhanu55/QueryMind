@@ -26,11 +26,14 @@ class Settings(BaseSettings):
     question_cache_ttl_seconds: int = 600
 
     # --- llm ---
-    llm_provider: Literal["mock", "anthropic", "gemini"] = "mock"
+    llm_provider: Literal["mock", "anthropic", "gemini", "groq", "local"] = "mock"
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-5"
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash"
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
+    local_model: str = "Qwen/Qwen2.5-1.5B-Instruct"
 
     # --- guardrails ---
     guardrail_row_limit_default: int = 200

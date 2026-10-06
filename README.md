@@ -11,12 +11,21 @@ Turns plain-English analytics questions into guardrailed, read-only SQL against 
 
 | Check | Result |
 |---|---|
-| Overall accuracy (74-question benchmark) | **91.9%** (68/74) |
+| Overall accuracy, offline rule-based parser (74 questions) | 91.9% (68/74); fitted to this schema and these questions, so a ceiling for hand-built parsing, not LLM accuracy |
+| Overall accuracy, **real LLM** (Qwen2.5-1.5B-Instruct, local, greedy, same prompt and guardrail) | **68.9%** (51/74): simple 75%, aggregations 69%, joins 60% |
 | — sales schema only (60 questions) | 91.7% (55/60): simple 100%, aggregations 96.7%, joins 73.3% |
 | — wallet-risk schema (14 questions) | 92.9% (13/14); written by the parser's author, so optimistic |
 | Adversarial prompts blocked | **48/48** |
 | Guardrail latency | avg 0.10ms, max 2.85ms |
 | Load test (150 users): throughput / p50 latency | +50.6% RPM / -51.6% |
+
+### Which number to trust
+
+The 91.9% measures a rule-based parser written against this very schema and question set, so it says little about how the agent generalises. The 68.9% is a
+small open model answering the same questions from the same schema prompt (`--provider local`, reproducible with no API key on a 6 GB GPU). The guardrail
+layer runs identically in both cases. A larger model should score higher, and `--provider groq` runs Llama 3.3 70B on Groq's free tier
+(`GROQ_API_KEY=... python tests/accuracy/run_accuracy.py --provider groq`; that number has not been measured yet). Real-LLM runs write
+`reports/accuracy_report_<provider>.json` and never overwrite the mock report.
 
 ## Wallet risk (absorbs the former ChainScore and WalletGuard repos)
 
@@ -67,3 +76,7 @@ python tests/safety/run_safety_test.py --provider mock  # reproduce the guardrai
 ```
 
 Full architecture, guardrail rule list, and every benchmark's methodology are documented in [`docs/DETAILS.md`](docs/DETAILS.md).
+
+## Test coverage
+
+54 unit tests, **61% line coverage** of `app/` (CI fails below 55%). The Anthropic, Gemini and Groq providers need API keys and the local provider needs a GPU, so those are exercised only by the benchmark scripts.

@@ -15,6 +15,14 @@ def get_provider() -> NL2SQLProvider:
         from app.llm.gemini_provider import GeminiProvider
 
         return GeminiProvider()
+    if settings.llm_provider == "groq":
+        from app.llm.groq_provider import GroqProvider
+
+        return GroqProvider()
+    if settings.llm_provider == "local":
+        from app.llm.local_provider import LocalProvider
+
+        return LocalProvider()
     from app.llm.mock_provider import MockNL2SQLProvider
 
     return MockNL2SQLProvider()

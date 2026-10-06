@@ -15,7 +15,7 @@ projection, while still penalizing wrong filters (too many/few rows) or wrong
 joins (missing values).
 
 Usage:
-    python tests/accuracy/run_accuracy.py [--provider mock|anthropic|gemini] [--verbose]
+    python tests/accuracy/run_accuracy.py [--provider mock|anthropic|gemini|groq|local] [--verbose]
 
 Requires the database from db/seed.py to be present (docker compose up + seed.py).
 """
@@ -214,7 +214,7 @@ async def run(provider_name: str, verbose: bool) -> dict:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--provider", choices=["mock", "anthropic", "gemini"], default=os.getenv("LLM_PROVIDER", "mock"))
+    parser.add_argument("--provider", choices=["mock", "anthropic", "gemini", "groq", "local"], default=os.getenv("LLM_PROVIDER", "mock"))
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -226,10 +226,12 @@ def main():
     for cat, stats in report["by_category"].items():
         print(f"  {cat:12s}: {stats['accuracy'] * 100:5.1f}% ({stats['correct']}/{stats['total']})")
 
-    REPORT_PATH.parent.mkdir(exist_ok=True)
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    # the mock provider keeps the canonical report name; real-LLM runs get their own file so they never overwrite it
+    out_path = REPORT_PATH if args.provider == "mock" else REPORT_PATH.with_name(f"accuracy_report_{args.provider}.json")
+    out_path.parent.mkdir(exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
-    print(f"\nFull report written to {REPORT_PATH}")
+    print(f"\nFull report written to {out_path}")
 
 
 if __name__ == "__main__":
