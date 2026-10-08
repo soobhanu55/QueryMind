@@ -27,6 +27,14 @@ layer runs identically in both cases. A larger model should score higher, and `-
 (`GROQ_API_KEY=... python tests/accuracy/run_accuracy.py --provider groq`; that number has not been measured yet). Real-LLM runs write
 `reports/accuracy_report_<provider>.json` and never overwrite the mock report.
 
+### Routing: rules first, model only when needed
+
+`LLM_PROVIDER=routed` answers with the rule-based parser and escalates to a model only below a confidence threshold, with
+per-tier timeouts and circuit breakers, a daily call budget, a rule that keeps e-mail/phone/address questions off hosted APIs,
+and per-response tier, tokens and list-price cost (`GET /llm/stats` for the counters). On the 74 questions with the local
+model it answered 93.2% (69/74) with **1 model call instead of 74**; a higher threshold sent more questions to the weaker
+model and lowered accuracy (81.1% with 25 calls, 75.7% with 48). Details, caveats and the unmeasured Groq case: [`docs/routing_eval.md`](docs/routing_eval.md).
+
 ## Wallet risk (absorbs the former ChainScore and WalletGuard repos)
 
 A second domain next to the sales schema: **Aave V2 wallets on Polygon**. `ml/wallet_features.py` turns 100,000 real
@@ -79,4 +87,4 @@ Full architecture, guardrail rule list, and every benchmark's methodology are do
 
 ## Test coverage
 
-54 unit tests, **61% line coverage** of `app/` (CI fails below 55%). The Anthropic, Gemini and Groq providers need API keys and the local provider needs a GPU, so those are exercised only by the benchmark scripts.
+66 unit tests, **63% line coverage** of `app/` (CI fails below 55%), including the router (escalation, fallback, breaker, timeout, privacy rule, budget). The Anthropic, Gemini and Groq providers need API keys and the local provider needs a GPU, so those are exercised only by the benchmark scripts.

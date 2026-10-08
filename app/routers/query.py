@@ -11,6 +11,7 @@ from app.config import get_settings
 from app.executor import QueryExecutionError, execute_query
 from app.guardrails.rules import check_sql
 from app.llm import SQLGenerationResult, get_provider
+from app.llm.router import cost_usd
 from app.models import QueryRequest, QueryResponse
 from app.schema_store import get_schema_store
 from app.summarizer import summarize
@@ -41,7 +42,7 @@ async def run_query(request: QueryRequest) -> QueryResponse:
     cached = False
     if cached_generation is not None:
         generation = SQLGenerationResult(**cached_generation)
-        cached = True
+        generation.route, cached = "cache", True
     else:
         provider = get_provider()
         generation = await provider.generate(request.question, schema_text)
@@ -94,4 +95,10 @@ async def run_query(request: QueryRequest) -> QueryResponse:
         generation_ms=round(generation_ms, 3),
         cached=cached,
         summary=summary_text,
+        route=generation.route,
+        model=generation.model,
+        escalated=generation.escalated,
+        input_tokens=generation.input_tokens,
+        output_tokens=generation.output_tokens,
+        cost_usd=0.0 if cached else cost_usd(generation.model, generation.input_tokens, generation.output_tokens),
     )

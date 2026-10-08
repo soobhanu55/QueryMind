@@ -9,6 +9,12 @@ class SQLGenerationResult:
     sql: str
     confidence: float
     explanation: str
+    # filled in by the providers that report usage and by the router
+    model: str | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    route: str | None = None
+    escalated: bool = False
 
 
 class NL2SQLProvider(ABC):

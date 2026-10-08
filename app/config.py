@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     question_cache_ttl_seconds: int = 600
 
     # --- llm ---
-    llm_provider: Literal["mock", "anthropic", "gemini", "groq", "local"] = "mock"
+    llm_provider: Literal["mock", "anthropic", "gemini", "groq", "local", "routed"] = "mock"
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-5"
     gemini_api_key: str = ""
@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     groq_model: str = "llama-3.3-70b-versatile"
     local_model: str = "Qwen/Qwen2.5-1.5B-Instruct"
+
+    # --- routing (llm_provider="routed"): the rule-based parser answers first, a model only when it is not confident ---
+    router_llm: Literal["anthropic", "gemini", "groq", "local"] = "groq"
+    router_min_confidence: float = 0.55  # rules answers below this escalate to the model
+    router_timeout_seconds: float = 30.0
+    router_llm_daily_calls: int = 500  # budget guard: beyond it the model tier is skipped for the rest of the UTC day
+    # questions matching this never go to a hosted API (only to the rules, or to a local model)
+    router_private_pattern: str = r"\b(e-?mails?|phone numbers?|addresses)\b"
 
     # --- guardrails ---
     guardrail_row_limit_default: int = 200

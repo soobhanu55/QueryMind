@@ -15,7 +15,7 @@ projection, while still penalizing wrong filters (too many/few rows) or wrong
 joins (missing values).
 
 Usage:
-    python tests/accuracy/run_accuracy.py [--provider mock|anthropic|gemini|groq|local] [--verbose]
+    python tests/accuracy/run_accuracy.py [--provider mock|anthropic|gemini|groq|local|routed] [--verbose]
 
 Requires the database from db/seed.py to be present (docker compose up + seed.py).
 """
@@ -43,6 +43,7 @@ load_dotenv()
 from app.config import get_settings  # noqa: E402
 from app.guardrails.rules import check_sql  # noqa: E402
 from app.llm.factory import get_provider  # noqa: E402
+from app.llm.router import cost_usd  # noqa: E402
 from app.schema_store import get_schema_store  # noqa: E402
 
 TEST_SET_PATH = Path(__file__).parent / "test_set.jsonl"
@@ -102,6 +103,29 @@ async def load_test_cases() -> list[dict]:
             if line:
                 cases.append(json.loads(line))
     return cases
+
+
+def routing_summary(results: list[dict]) -> dict:
+    """Where the answers came from (only meaningful for --provider routed) and what the model calls cost."""
+    ok = [r for r in results if "generation_ms" in r]
+    by_route: dict[str, dict] = {}
+    for r in ok:
+        d = by_route.setdefault(r.get("route") or "n/a", {"n": 0, "correct": 0, "ms": 0.0})
+        d["n"] += 1
+        d["correct"] += bool(r["correct"])
+        d["ms"] += r["generation_ms"]
+    model_calls = [r for r in ok if r.get("model") not in (None, "rules")]
+    unpriced = [r for r in model_calls if r.get("cost_usd") is None]
+    return {
+        "by_route": {k: {"n": v["n"], "accuracy": round(v["correct"] / v["n"], 4), "mean_generation_ms": round(v["ms"] / v["n"], 1)}
+                     for k, v in by_route.items()},
+        "mean_generation_ms": round(sum(r["generation_ms"] for r in ok) / len(ok), 1) if ok else None,
+        "input_tokens": sum(r.get("input_tokens") or 0 for r in ok),
+        "output_tokens": sum(r.get("output_tokens") or 0 for r in ok),
+        "model_calls": len(model_calls),
+        "model_calls_without_a_known_price": len(unpriced),  # cost below covers only the priced calls
+        "cost_usd_list_price": round(sum(r["cost_usd"] or 0 for r in ok), 6),
+    }
 
 
 async def run(provider_name: str, verbose: bool) -> dict:
@@ -177,6 +201,9 @@ async def run(provider_name: str, verbose: bool) -> dict:
                 "id": case["id"], "category": category, "question": question,
                 "generated_sql": generation.sql, "confidence": generation.confidence,
                 "generation_ms": round(gen_ms, 2), "correct": correct, "row_capped": capped,
+                "route": generation.route, "model": generation.model, "escalated": generation.escalated,
+                "input_tokens": generation.input_tokens, "output_tokens": generation.output_tokens,
+                "cost_usd": cost_usd(generation.model, generation.input_tokens, generation.output_tokens),
                 "candidate_row_count": len(candidate_values), "reference_row_count": len(reference_values),
             })
 
@@ -207,6 +234,7 @@ async def run(provider_name: str, verbose: bool) -> dict:
             }
             for cat, v in sorted(category_totals.items())
         },
+        "routing": routing_summary(results),
         "results": results,
     }
     return report
@@ -214,7 +242,7 @@ async def run(provider_name: str, verbose: bool) -> dict:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--provider", choices=["mock", "anthropic", "gemini", "groq", "local"], default=os.getenv("LLM_PROVIDER", "mock"))
+    parser.add_argument("--provider", choices=["mock", "anthropic", "gemini", "groq", "local", "routed"], default=os.getenv("LLM_PROVIDER", "mock"))
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 

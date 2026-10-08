@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import httpx
 
 from app.config import get_settings
@@ -34,4 +36,7 @@ class GroqProvider(NL2SQLProvider):
                 import asyncio
                 await asyncio.sleep(2 ** attempt * 2)
             r.raise_for_status()
-        return parse_sql_response(r.json()["choices"][0]["message"]["content"])
+        data = r.json()
+        usage = data.get("usage") or {}
+        return replace(parse_sql_response(data["choices"][0]["message"]["content"]), model=self._model,
+                       input_tokens=usage.get("prompt_tokens"), output_tokens=usage.get("completion_tokens"))

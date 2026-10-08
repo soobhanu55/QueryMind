@@ -30,6 +30,13 @@ class QueryResponse(BaseModel):
     generation_ms: float
     cached: bool
     summary: str
+    # how the SQL was produced: "cache", "rules", a model name's tier, or "rules_degraded" (model needed but unavailable)
+    route: Optional[str] = None
+    model: Optional[str] = None
+    escalated: bool = False
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    cost_usd: Optional[float] = None  # list-price equivalent; null when the model has no known price
 
 
 class BlockedQueryError(BaseModel):
