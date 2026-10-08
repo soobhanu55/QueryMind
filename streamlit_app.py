@@ -83,7 +83,7 @@ STRINGS = {
         "truncated": "Results truncated at the row safety cap.",
         "spinner": "Generating SQL and querying the database...",
         "yes": "yes", "no": "no",
-        "embedded_note": "Running on the bundled sample data (in-memory SQLite): the configured Postgres is not reachable.",
+        "embedded_note": "Running on the bundled sample data (an in-memory SQLite database); no hosted database is needed.",
     },
     "de": {
         "title": "\U0001f4ca Enterprise Text-zu-SQL Analytics-Agent",
@@ -103,7 +103,7 @@ STRINGS = {
         "truncated": "Ergebnisse bei der Sicherheitsgrenze abgeschnitten.",
         "spinner": "SQL wird generiert und die Datenbank abgefragt...",
         "yes": "ja", "no": "nein",
-        "embedded_note": "Läuft auf den mitgelieferten Beispieldaten (SQLite im Speicher): die konfigurierte Postgres-Datenbank ist nicht erreichbar.",
+        "embedded_note": "Läuft auf den mitgelieferten Beispieldaten (SQLite im Speicher); keine gehostete Datenbank nötig.",
     },
 }
 
