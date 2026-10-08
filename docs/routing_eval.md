@@ -54,3 +54,11 @@ even though the free tier bills nothing.
 
 Not covered: when the rules produce confident but invalid SQL (benchmark question 30), no tier escalates because the error only
 shows at execution time; retrying with the model on an execution error is the natural next step.
+
+## Repair after an execution error
+
+Most of the small model's failures on the original set were queries the database rejected (a column that does not exist, a
+wrong alias). Model providers now get one repair attempt: the model is shown its SQL and the error and the new query goes through
+the same guardrail and executor (API route and benchmark; `REPAIR=0` turns it off in the benchmark). Local model, original 74
+questions: 68.9% -> 73.0% (5 queries repaired). On the 35 held-out questions: 51.4% -> 51.4%, 0 repairs, because there the
+failures are valid queries that answer the wrong question, which a repair prompt cannot see.
