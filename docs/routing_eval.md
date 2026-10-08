@@ -17,11 +17,12 @@ Same questions, same schema prompt, same guardrail and result check. The model i
 | Model for every question | 68.9% (51/74) | 74 | about 3.7 s |
 | Rules only | 91.9% (68/74) | 0 | 0.5 ms |
 | **Routed, threshold 0.55 (default)** | **93.2% (69/74)** | **1** | 286 ms (one cold model load of 21 s dominates) |
-| Routed, threshold 0.65 | 81.1% (60/74) | 25 | 1.7 s |
-| Routed, threshold 0.80 | 75.7% (56/74) | 48 | 3.3 s |
+| Routed, threshold 0.65 | 81.1% (60/74) | 34 | 1.7 s |
+| Routed, threshold 0.80 | 75.7% (56/74) | 60 | 3.3 s |
 
-Answers by tier at threshold 0.65: the 40 questions the rules were confident about were 40/40 correct; the 25 escalated to
-the model were 80% correct, and the 9 questions with no usable rules answer account for the rest.
+Answers by tier at threshold 0.65: the 40 questions the rules were confident about were 40/40 correct; the 34 escalated to
+the model were 20/34 correct (9 of the 34 produced SQL that failed on execution). Mean generation time is over the answers that
+executed.
 
 ## What this shows, and what it does not
 

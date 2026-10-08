@@ -33,7 +33,7 @@ layer runs identically in both cases. A larger model should score higher, and `-
 per-tier timeouts and circuit breakers, a daily call budget, a rule that keeps e-mail/phone/address questions off hosted APIs,
 and per-response tier, tokens and list-price cost (`GET /llm/stats` for the counters). On the 74 questions with the local
 model it answered 93.2% (69/74) with **1 model call instead of 74**; a higher threshold sent more questions to the weaker
-model and lowered accuracy (81.1% with 25 calls, 75.7% with 48). Details, caveats and the unmeasured Groq case: [`docs/routing_eval.md`](docs/routing_eval.md).
+model and lowered accuracy (81.1% with 34 calls, 75.7% with 60). Details, caveats and the unmeasured Groq case: [`docs/routing_eval.md`](docs/routing_eval.md).
 
 ## Wallet risk (absorbs the former ChainScore and WalletGuard repos)
 
