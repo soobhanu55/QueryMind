@@ -20,8 +20,8 @@ class AnthropicProvider(NL2SQLProvider):
         self._client = AsyncAnthropic(api_key=settings.anthropic_api_key)
         self._model = settings.anthropic_model
 
-    async def generate(self, question: str, schema_text: str) -> SQLGenerationResult:
-        system_prompt, user_prompt = build_prompt(question, schema_text)
+    async def generate(self, question: str, schema_text: str, retry: tuple[str, str] | None = None) -> SQLGenerationResult:
+        system_prompt, user_prompt = build_prompt(question, schema_text, retry)
         response = await self._client.messages.create(
             model=self._model,
             max_tokens=1024,

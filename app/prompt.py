@@ -29,8 +29,21 @@ QUESTION:
 """
 
 
-def build_prompt(question: str, schema_text: str) -> tuple[str, str]:
-    return SYSTEM_PROMPT, USER_PROMPT_TEMPLATE.format(schema_text=schema_text, question=question)
+REPAIR_TEMPLATE = """
+YOUR PREVIOUS ATTEMPT:
+{sql}
+
+It failed with this database error:
+{error}
+
+Return a corrected query that uses only the tables and columns listed under SCHEMA."""
+
+
+def build_prompt(question: str, schema_text: str, retry: tuple[str, str] | None = None) -> tuple[str, str]:
+    user = USER_PROMPT_TEMPLATE.format(schema_text=schema_text, question=question)
+    if retry:
+        user += REPAIR_TEMPLATE.format(sql=retry[0], error=retry[1][:400])
+    return SYSTEM_PROMPT, user
 
 
 GENERATE_SQL_TOOL = {

@@ -34,7 +34,7 @@ class LocalProvider(NL2SQLProvider):
         n_in = inputs["input_ids"].shape[1]
         return self._tok.decode(out[0][n_in:], skip_special_tokens=True), n_in, out.shape[1] - n_in
 
-    async def generate(self, question: str, schema_text: str) -> SQLGenerationResult:
-        system_prompt, user_prompt = build_prompt(question, schema_text)
+    async def generate(self, question: str, schema_text: str, retry: tuple[str, str] | None = None) -> SQLGenerationResult:
+        system_prompt, user_prompt = build_prompt(question, schema_text, retry)
         text, n_in, n_out = await asyncio.to_thread(self._complete, system_prompt, user_prompt)
         return replace(parse_sql_response(text), model=get_settings().local_model, input_tokens=n_in, output_tokens=n_out)

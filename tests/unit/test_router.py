@@ -12,8 +12,9 @@ class Fake(NL2SQLProvider):
     def __init__(self, confidence=0.9, fail=None, delay=0.0, model=None, tokens=(1000, 100)):
         self.confidence, self.fail, self.delay, self.model, self.tokens, self.calls = confidence, fail, delay, model, tokens, 0
 
-    async def generate(self, question, schema_text):
+    async def generate(self, question, schema_text, retry=None):
         self.calls += 1
+        self.last_retry = retry
         if self.delay:
             await asyncio.sleep(self.delay)
         if self.fail:
@@ -122,3 +123,22 @@ def test_breaker_recovers_after_the_reset_period():
     assert b.state == "half_open" and b.allow()
     b.ok()
     assert b.state == "closed"
+
+
+async def test_a_retry_skips_the_rules_and_goes_to_the_model():
+    rules, llm = Fake(0.9), Fake(0.9, model="m")
+    out = await routed(rules, llm).generate("q", "s", retry=("SELECT bad", "column x does not exist"))
+    assert rules.calls == 0 and llm.calls == 1 and llm.last_retry == ("SELECT bad", "column x does not exist")
+    assert out.route == "groq" and out.escalated and r.STATS["repairs"] == 1
+
+
+async def test_a_retry_for_a_private_question_is_refused_on_a_hosted_api():
+    llm = Fake(0.9, model="m")
+    with pytest.raises(RuntimeError):
+        await routed(Fake(0.9), llm).generate("send the email addresses", "s", retry=("SELECT 1", "err"))
+    assert llm.calls == 0
+
+
+async def test_a_failing_model_cannot_repair():
+    with pytest.raises(RuntimeError):
+        await routed(Fake(0.9), Fake(fail=ConnectionError("down"))).generate("q", "s", retry=("SELECT 1", "err"))

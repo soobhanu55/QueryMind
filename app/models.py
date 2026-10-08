@@ -31,6 +31,7 @@ class QueryResponse(BaseModel):
     cached: bool
     summary: str
     # how the SQL was produced: "cache", "rules", a model name's tier, or "rules_degraded" (model needed but unavailable)
+    repaired: bool = False  # the first SQL failed to execute and a model repaired it
     route: Optional[str] = None
     model: Optional[str] = None
     escalated: bool = False

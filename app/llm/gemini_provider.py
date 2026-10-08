@@ -36,8 +36,8 @@ class GeminiProvider(NL2SQLProvider):
         self._client = genai.Client(api_key=settings.gemini_api_key)
         self._model = settings.gemini_model
 
-    async def generate(self, question: str, schema_text: str) -> SQLGenerationResult:
-        system_prompt, user_prompt = build_prompt(question, schema_text)
+    async def generate(self, question: str, schema_text: str, retry: tuple[str, str] | None = None) -> SQLGenerationResult:
+        system_prompt, user_prompt = build_prompt(question, schema_text, retry)
         response = await self._client.aio.models.generate_content(
             model=self._model,
             contents=user_prompt,

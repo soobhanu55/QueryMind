@@ -110,13 +110,13 @@ class RoutedProvider(NL2SQLProvider):
             self._day, self.calls_today = self._today(), 0
         return self.calls_today < self.settings.router_llm_daily_calls
 
-    async def _run(self, tier: Tier, question: str, schema_text: str) -> SQLGenerationResult | None:
+    async def _run(self, tier: Tier, question: str, schema_text: str, retry: tuple[str, str] | None = None) -> SQLGenerationResult | None:
         if not tier.breaker.allow():
             STATS[f"{tier.name}_skipped_breaker_open"] += 1
             return None
         started = time.perf_counter()
         try:
-            result = await asyncio.wait_for(tier.provider().generate(question, schema_text), self.settings.router_timeout_seconds)
+            result = await asyncio.wait_for(tier.provider().generate(question, schema_text, retry), self.settings.router_timeout_seconds)
         except Exception as exc:  # noqa: BLE001 - any tier failure is handled the same way
             tier.breaker.fail()
             STATS[f"{tier.name}_failures"] += 1
@@ -131,9 +131,18 @@ class RoutedProvider(NL2SQLProvider):
                     confidence=result.confidence, tokens_in=result.input_tokens, tokens_out=result.output_tokens)
         return replace(result, model=model, route=tier.name)
 
-    async def generate(self, question: str, schema_text: str) -> SQLGenerationResult:
+    async def generate(self, question: str, schema_text: str, retry: tuple[str, str] | None = None) -> SQLGenerationResult:
         s = self.settings
         private = bool(self.private_re.search(question)) and s.router_llm in HOSTED
+        if retry:  # the caller's SQL failed at execution: only a model can repair it
+            if private or not self._budget_left():
+                raise RuntimeError("no tier is allowed to repair this query")
+            self.calls_today += 1
+            answer = await self._run(self.llm, question, schema_text, retry)
+            if answer is None:
+                raise RuntimeError("the model tier could not repair the query")
+            STATS["repairs"] += 1
+            return replace(answer, escalated=True)
         draft = await self._run(self.rules, question, schema_text)
         if draft is not None and (draft.confidence >= s.router_min_confidence or private):
             if private:

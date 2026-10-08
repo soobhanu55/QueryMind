@@ -19,6 +19,8 @@ class SQLGenerationResult:
 
 class NL2SQLProvider(ABC):
     @abstractmethod
-    async def generate(self, question: str, schema_text: str) -> SQLGenerationResult:
-        """Generate a single read-only SQL statement (not yet guardrail-checked) for `question`."""
+    async def generate(self, question: str, schema_text: str, retry: tuple[str, str] | None = None) -> SQLGenerationResult:
+        """Generate a single read-only SQL statement (not yet guardrail-checked) for `question`.
+
+        `retry` is (previous SQL, error it produced); a model provider uses it to repair the query, the rules ignore it."""
         raise NotImplementedError

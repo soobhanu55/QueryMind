@@ -416,7 +416,7 @@ def _handle_simple_lookup(q: str, store) -> Optional[SQLGenerationResult]:
 
 
 class MockNL2SQLProvider(NL2SQLProvider):
-    async def generate(self, question: str, schema_text: str) -> SQLGenerationResult:
+    async def generate(self, question: str, schema_text: str, retry: tuple[str, str] | None = None) -> SQLGenerationResult:
         store = get_schema_store()
         q = " " + re.sub(r"[^a-z0-9$.\s]", " ", question.lower()) + " "
         q = re.sub(r"\s+", " ", q)

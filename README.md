@@ -2,7 +2,7 @@
 
 Turns plain-English analytics questions into guardrailed, read-only SQL against Postgres — executes it safely, returns results plus a summary.
 
-**Live demo:** https://enterprise-text-to-sql-analytics-agent.streamlit.app/ *(free-tier Streamlit, ~30s cold start)*. It runs on bundled sample data in an in-memory SQLite database, so there is no hosted database to pause or delete (the free Supabase one it used before was removed); if a Postgres `DATABASE_URL` is configured and reachable it uses that instead.
+**Live demo:** https://enterprise-text-to-sql-analytics-agent.streamlit.app/ is being redeployed on bundled sample data (in-memory SQLite, no hosted database to pause or delete) after its free Supabase database was removed; until the redeploy it shows a database error. Run it locally meanwhile (see "Run it"). The app also uses a Postgres `DATABASE_URL` when one is configured and reachable.
 
 ![Unit test suite](docs/demo.gif)
 ![Live app walkthrough](docs/demo_ui.gif)

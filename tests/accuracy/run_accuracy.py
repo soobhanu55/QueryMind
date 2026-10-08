@@ -122,6 +122,7 @@ def routing_summary(results: list[dict]) -> dict:
         "mean_generation_ms": round(sum(r["generation_ms"] for r in ok) / len(ok), 1) if ok else None,
         "input_tokens": sum(r.get("input_tokens") or 0 for r in ok),
         "output_tokens": sum(r.get("output_tokens") or 0 for r in ok),
+        "repaired": sum(bool(r.get("repaired")) for r in ok),
         "model_calls": len(model_calls),
         "model_calls_without_a_known_price": len(unpriced),  # cost below covers only the priced calls
         "cost_usd_list_price": round(sum(r["cost_usd"] or 0 for r in ok), 6),
@@ -180,8 +181,20 @@ async def run(provider_name: str, verbose: bool) -> dict:
                 category_totals[category]["total"] += 1
                 continue
 
+            repaired = False
             try:
-                candidate_values = await fetch_rows(guardrail_result.sanitized_sql)
+                try:
+                    candidate_values = await fetch_rows(guardrail_result.sanitized_sql)
+                except Exception as first_error:  # noqa: BLE001
+                    # a model gets one repair attempt (REPAIR=0 turns it off); the rules cannot repair themselves
+                    if provider_name == "mock" or os.environ.get("REPAIR", "1") == "0":
+                        raise
+                    fixed = await provider.generate(question, schema_text, retry=(generation.sql, str(first_error)))
+                    verdict = check_sql(fixed.sql, allowed_tables=allowed_tables, question=question)
+                    if not verdict.allowed:
+                        raise
+                    generation, repaired = fixed, True
+                    candidate_values = await fetch_rows(verdict.sanitized_sql)
                 reference_values = await fetch_rows(reference_sql)
             except Exception as exc:  # noqa: BLE001
                 results.append({
@@ -206,7 +219,7 @@ async def run(provider_name: str, verbose: bool) -> dict:
                 "id": case["id"], "category": category, "question": question,
                 "generated_sql": generation.sql, "confidence": generation.confidence,
                 "generation_ms": round(gen_ms, 2), "correct": correct, "row_capped": capped,
-                "route": generation.route, "model": generation.model, "escalated": generation.escalated,
+                "route": generation.route, "model": generation.model, "escalated": generation.escalated, "repaired": repaired,
                 "input_tokens": generation.input_tokens, "output_tokens": generation.output_tokens,
                 "cost_usd": cost_usd(generation.model, generation.input_tokens, generation.output_tokens),
                 "candidate_row_count": len(candidate_values), "reference_row_count": len(reference_values),

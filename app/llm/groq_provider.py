@@ -21,8 +21,8 @@ class GroqProvider(NL2SQLProvider):
             raise RuntimeError("GROQ_API_KEY is not set; cannot use llm_provider=groq")
         self._key, self._model = settings.groq_api_key, settings.groq_model
 
-    async def generate(self, question: str, schema_text: str) -> SQLGenerationResult:
-        system_prompt, user_prompt = build_prompt(question, schema_text)
+    async def generate(self, question: str, schema_text: str, retry: tuple[str, str] | None = None) -> SQLGenerationResult:
+        system_prompt, user_prompt = build_prompt(question, schema_text, retry)
         body = {
             "model": self._model, "temperature": 0, "response_format": {"type": "json_object"},
             "messages": [{"role": "system", "content": system_prompt + "\n" + JSON_INSTRUCTION},

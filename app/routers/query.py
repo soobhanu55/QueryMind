@@ -11,6 +11,7 @@ from app.config import get_settings
 from app.executor import QueryExecutionError, execute_query
 from app.guardrails.rules import check_sql
 from app.llm import SQLGenerationResult, get_provider
+from app.llm.mock_provider import MockNL2SQLProvider
 from app.llm.router import cost_usd
 from app.models import QueryRequest, QueryResponse
 from app.schema_store import get_schema_store
@@ -18,6 +19,20 @@ from app.summarizer import summarize
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
+
+
+async def _repair(provider, question, schema_text, generation, error, allowed_tables, row_cap):
+    """One repair attempt after an execution error: the model sees its SQL and the database error, and the new SQL goes through
+    the same guardrail and executor. Returns (generation, guardrail_result, result), or None when it cannot be fixed."""
+    try:
+        fixed = await provider.generate(question, schema_text, retry=(generation.sql, error))
+        verdict = check_sql(fixed.sql, allowed_tables=allowed_tables, row_limit_cap=row_cap, question=question)
+        if not verdict.allowed:
+            return None
+        return fixed, verdict, await execute_query(verdict.sanitized_sql, row_cap=row_cap)
+    except Exception as exc:  # noqa: BLE001 - a failed repair just means the original error is reported
+        logger.info("repair_failed", error=type(exc).__name__)
+        return None
 
 
 @router.post("/query", response_model=QueryResponse)
@@ -72,12 +87,23 @@ async def run_query(request: QueryRequest) -> QueryResponse:
             },
         )
 
-    # 4. Execute against Postgres with timeout + row cap.
+    # 4. Execute against the database with timeout + row cap. A query that fails to run (not a timeout) gets one repair attempt
+    #    from a model provider; the rules cannot repair themselves.
+    repaired = False
     try:
         result = await execute_query(guardrail_result.sanitized_sql, row_cap=row_cap)
     except QueryExecutionError as exc:
-        status_code = 504 if exc.is_timeout else 400
-        raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+        fix = None
+        if not exc.is_timeout and not isinstance(get_provider(), MockNL2SQLProvider):
+            fix = await _repair(get_provider(), request.question, schema_text, generation, str(exc), store.table_names(), row_cap)
+        if fix is None:
+            status_code = 504 if exc.is_timeout else 400
+            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+        generation, guardrail_result, result = fix
+        repaired, cached = True, False
+        await cache.set_json(
+            q_key, {"sql": generation.sql, "confidence": generation.confidence, "explanation": generation.explanation},
+            settings.question_cache_ttl_seconds)
 
     # 5. Natural-language summary + response assembly.
     summary_text = summarize(result)
@@ -95,6 +121,7 @@ async def run_query(request: QueryRequest) -> QueryResponse:
         generation_ms=round(generation_ms, 3),
         cached=cached,
         summary=summary_text,
+        repaired=repaired,
         route=generation.route,
         model=generation.model,
         escalated=generation.escalated,
