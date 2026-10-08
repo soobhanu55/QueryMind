@@ -89,4 +89,4 @@ Full architecture, guardrail rule list, and every benchmark's methodology are do
 
 ## Test coverage
 
-81 unit tests, **~65% line coverage** of `app/` (CI fails below 55%), including the router (escalation, fallback, breaker, timeout, privacy rule, budget). The Anthropic, Gemini and Groq providers need API keys and the local provider needs a GPU, so those are exercised only by the benchmark scripts.
+81 unit tests, **71% line coverage** of `app/` (CI fails below 65%), including the router (escalation, fallback, breaker, timeout, privacy rule, budget). The Anthropic, Gemini and Groq providers need API keys and the local provider needs a GPU, so those are exercised only by the benchmark scripts.

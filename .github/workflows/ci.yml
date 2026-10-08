@@ -30,7 +30,7 @@ jobs:
       - name: Seed the analytics database
         run: python db/seed.py
       - name: Unit + Postgres integration tests
-        run: pytest -q --cov=app --cov-report=term --cov-fail-under=55
+        run: pytest -q --cov=app --cov-report=term --cov-fail-under=65
       - name: Safety suite (adversarial prompts, mock LLM)
         run: python tests/safety/run_safety_test.py --provider mock
       - name: Docker image builds
