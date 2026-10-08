@@ -2,7 +2,7 @@
 
 Turns plain-English analytics questions into guardrailed, read-only SQL against Postgres — executes it safely, returns results plus a summary.
 
-**Live demo: currently offline.** The Streamlit app starts but its free Supabase database no longer exists (checked 2026-10-08: "Name or service not known"); it is being moved to a new free database. Run it locally instead (see "Run it" below).
+**Live demo:** https://enterprise-text-to-sql-analytics-agent.streamlit.app/ *(free-tier Streamlit, ~30s cold start)*. It runs on bundled sample data in an in-memory SQLite database, so there is no hosted database to pause or delete (the free Supabase one it used before was removed); if a Postgres `DATABASE_URL` is configured and reachable it uses that instead.
 
 ![Unit test suite](docs/demo.gif)
 ![Live app walkthrough](docs/demo_ui.gif)
@@ -89,4 +89,4 @@ Full architecture, guardrail rule list, and every benchmark's methodology are do
 
 ## Test coverage
 
-70 unit tests, **63% line coverage** of `app/` (CI fails below 55%), including the router (escalation, fallback, breaker, timeout, privacy rule, budget). The Anthropic, Gemini and Groq providers need API keys and the local provider needs a GPU, so those are exercised only by the benchmark scripts.
+81 unit tests, **~65% line coverage** of `app/` (CI fails below 55%), including the router (escalation, fallback, breaker, timeout, privacy rule, budget). The Anthropic, Gemini and Groq providers need API keys and the local provider needs a GPU, so those are exercised only by the benchmark scripts.

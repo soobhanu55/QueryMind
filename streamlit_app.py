@@ -83,6 +83,7 @@ STRINGS = {
         "truncated": "Results truncated at the row safety cap.",
         "spinner": "Generating SQL and querying the database...",
         "yes": "yes", "no": "no",
+        "embedded_note": "Running on the bundled sample data (in-memory SQLite): the configured Postgres is not reachable.",
     },
     "de": {
         "title": "\U0001f4ca Enterprise Text-zu-SQL Analytics-Agent",
@@ -102,6 +103,7 @@ STRINGS = {
         "truncated": "Ergebnisse bei der Sicherheitsgrenze abgeschnitten.",
         "spinner": "SQL wird generiert und die Datenbank abgefragt...",
         "yes": "ja", "no": "nein",
+        "embedded_note": "Läuft auf den mitgelieferten Beispieldaten (SQLite im Speicher): die konfigurierte Postgres-Datenbank ist nicht erreichbar.",
     },
 }
 
@@ -138,6 +140,34 @@ CSS = """
   }
 </style>
 """
+
+
+async def _ping_database() -> None:
+    from sqlalchemy import text
+
+    from app.db import session_scope
+
+    try:
+        async with session_scope() as session:
+            await asyncio.wait_for(session.execute(text("SELECT 1")), 5)
+    finally:
+        await dispose_engine()
+
+
+@st.cache_resource(show_spinner=False)
+def database_mode() -> str:
+    """"postgres" if the configured database answers, otherwise switch this process to the bundled SQLite sample data so the
+    demo keeps working when a free hosted database is paused or deleted."""
+    if get_settings().database_url.startswith("sqlite"):
+        return "embedded"
+    try:
+        asyncio.run(_ping_database())
+        return "postgres"
+    except Exception as exc:  # noqa: BLE001 - any failure to reach the database means: use the bundled data
+        logger.warning("database_unreachable_using_embedded", error=type(exc).__name__)
+        os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+        get_settings.cache_clear()
+        return "embedded"
 
 
 async def run_pipeline(question: str) -> dict:
@@ -301,6 +331,7 @@ def render_history(t):
 
 
 def main():
+    mode = database_mode()  # may switch DATABASE_URL to the embedded database, so read settings afterwards
     settings = get_settings()
     st.markdown(CSS, unsafe_allow_html=True)
 
@@ -308,6 +339,9 @@ def main():
     t = STRINGS["de"] if lang == "Deutsch" else STRINGS["en"]
 
     st.session_state.setdefault("view", "main")
+
+    if mode == "embedded":
+        st.sidebar.info(t["embedded_note"])
 
     if _secrets_error:
         st.sidebar.error(f"st.secrets error: {_secrets_error}")

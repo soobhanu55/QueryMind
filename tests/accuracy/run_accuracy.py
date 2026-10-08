@@ -136,8 +136,16 @@ async def run(provider_name: str, verbose: bool) -> dict:
     provider = get_provider()
     allowed_tables = store.table_names()
 
-    dsn = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
-    pool = await asyncpg.create_pool(dsn, min_size=2, max_size=5)
+    embedded_db = settings.database_url.startswith("sqlite")  # DATABASE_URL=sqlite:///:memory: runs the benchmark with no Postgres
+    pool = None if embedded_db else await asyncpg.create_pool(settings.database_url.replace("postgresql+asyncpg://", "postgresql://"), min_size=2, max_size=5)
+
+    async def fetch_rows(sql: str) -> list[list]:
+        if embedded_db:
+            from app import embedded
+
+            return [list(row) for row in embedded.run(sql, 10**6, 30)[1]]
+        async with pool.acquire() as conn:
+            return [list(row.values()) for row in await conn.fetch(sql)]
 
     cases = await load_test_cases()
     results = []
@@ -173,9 +181,8 @@ async def run(provider_name: str, verbose: bool) -> dict:
                 continue
 
             try:
-                async with pool.acquire() as conn:
-                    candidate_rows = await conn.fetch(guardrail_result.sanitized_sql)
-                    reference_rows = await conn.fetch(reference_sql)
+                candidate_values = await fetch_rows(guardrail_result.sanitized_sql)
+                reference_values = await fetch_rows(reference_sql)
             except Exception as exc:  # noqa: BLE001
                 results.append({
                     "id": case["id"], "category": category, "question": question,
@@ -185,8 +192,6 @@ async def run(provider_name: str, verbose: bool) -> dict:
                 category_totals[category]["total"] += 1
                 continue
 
-            candidate_values = [list(r.values()) for r in candidate_rows]
-            reference_values = [list(r.values()) for r in reference_rows]
             correct = rows_match(candidate_values, reference_values, row_cap=settings.max_result_rows)
             capped = (
                 len(candidate_values) == settings.max_result_rows
@@ -215,7 +220,8 @@ async def run(provider_name: str, verbose: bool) -> dict:
                     print(f"        reference: {reference_sql}")
                     print(f"        rows: candidate={len(candidate_values)} reference={len(reference_values)}")
     finally:
-        await pool.close()
+        if pool is not None:
+            await pool.close()
 
     overall_correct = sum(v["correct"] for v in category_totals.values())
     overall_total = sum(v["total"] for v in category_totals.values())

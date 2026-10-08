@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from sqlalchemy import text
 
 from app.cache import get_cache
-from app.db import session_scope
+from app.db import is_embedded, session_scope
 from app.llm import get_provider
 from app.llm.router import RoutedProvider, snapshot
 from app.models import HealthResponse
@@ -14,8 +14,13 @@ router = APIRouter()
 async def health() -> HealthResponse:
     db_ok = True
     try:
-        async with session_scope() as session:
-            await session.execute(text("SELECT 1"))
+        if is_embedded():
+            from app import embedded
+
+            embedded.connection().execute("SELECT 1")
+        else:
+            async with session_scope() as session:
+                await session.execute(text("SELECT 1"))
     except Exception:  # noqa: BLE001
         db_ok = False
 

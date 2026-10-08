@@ -15,10 +15,17 @@ _engine: Optional[AsyncEngine] = None
 _session_factory: Optional[async_sessionmaker[AsyncSession]] = None
 
 
+def is_embedded() -> bool:
+    """True when DATABASE_URL points at the bundled in-memory SQLite demo database (app/embedded.py)."""
+    return get_settings().database_url.startswith("sqlite")
+
+
 def get_engine() -> AsyncEngine:
     global _engine, _session_factory
     if _engine is None:
         settings = get_settings()
+        if is_embedded():
+            raise RuntimeError("the embedded SQLite database has no SQLAlchemy engine; use app.embedded")
         _engine = create_async_engine(
             settings.database_url,
             pool_size=settings.db_pool_min_size,

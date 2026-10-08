@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from app.cache import get_cache
-from app.db import dispose_engine, get_engine
+from app.db import dispose_engine, get_engine, is_embedded
 from app.logging_config import configure_logging
 from app.routers import health, query, score
 
@@ -13,7 +13,8 @@ configure_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    get_engine()
+    if not is_embedded():
+        get_engine()
     await get_cache()
     yield
     await dispose_engine()

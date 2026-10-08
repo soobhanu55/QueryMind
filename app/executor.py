@@ -1,7 +1,9 @@
 """Executes guardrail-approved, read-only SQL against Postgres with a timeout and row cap."""
 from __future__ import annotations
 
+import asyncio
 import decimal
+import sqlite3
 import time
 from dataclasses import dataclass
 from typing import Any, Optional
@@ -11,7 +13,8 @@ from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 
 from app.config import get_settings
-from app.db import session_scope
+from app import embedded
+from app.db import is_embedded, session_scope
 
 logger = structlog.get_logger(__name__)
 
@@ -48,6 +51,15 @@ async def execute_query(sql: str, row_cap: Optional[int] = None) -> ExecutionRes
     start = time.perf_counter()
     columns: list[str] = []
     fetched: list[Any] = []
+    if is_embedded():
+        try:
+            columns, fetched, truncated = await asyncio.to_thread(embedded.run, sql, row_cap, settings.query_timeout_seconds)
+        except sqlite3.Error as exc:
+            logger.warning("query_execution_failed", error=str(exc), sql=sql[:2000])
+            raise QueryExecutionError(str(exc), is_timeout="interrupted" in str(exc).lower()) from exc
+        execution_ms = (time.perf_counter() - start) * 1000
+        rows = [[_serialize(v) for v in row] for row in fetched]
+        return ExecutionResult(columns=columns, rows=rows, row_count=len(rows), truncated=truncated, execution_ms=execution_ms)
     async with session_scope() as session:
         try:
             await session.execute(text(f"SET LOCAL statement_timeout = {timeout_ms}"))
