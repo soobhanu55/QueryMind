@@ -2,7 +2,7 @@
 
 Turns plain-English analytics questions into guardrailed, read-only SQL against Postgres — executes it safely, returns results plus a summary.
 
-**Live demo:** https://enterprise-text-to-sql-analytics-agent.streamlit.app/ *(free-tier Streamlit, ~30s cold start)*
+**Live demo: currently offline.** The Streamlit app starts but its free Supabase database no longer exists (checked 2026-10-08: "Name or service not known"); it is being moved to a new free database. Run it locally instead (see "Run it" below).
 
 ![Unit test suite](docs/demo.gif)
 ![Live app walkthrough](docs/demo_ui.gif)
@@ -12,6 +12,7 @@ Turns plain-English analytics questions into guardrailed, read-only SQL against 
 | Check | Result |
 |---|---|
 | Overall accuracy, offline rule-based parser (74 questions) | 91.9% (68/74); fitted to this schema and these questions, so a ceiling for hand-built parsing, not LLM accuracy |
+| — same parser on **35 new questions** written afterwards (`tests/accuracy/heldout_set.jsonl`) | **60.0%** (21/35): this is the honest number for unseen phrasings; the small LLM gets 51.4% on them |
 | Overall accuracy, **real LLM** (Qwen2.5-1.5B-Instruct, local, greedy, same prompt and guardrail) | **68.9%** (51/74): simple 75%, aggregations 69%, joins 60% |
 | — sales schema only (60 questions) | 91.7% (55/60): simple 100%, aggregations 96.7%, joins 73.3% |
 | — wallet-risk schema (14 questions) | 92.9% (13/14); written by the parser's author, so optimistic |
@@ -31,9 +32,10 @@ layer runs identically in both cases. A larger model should score higher, and `-
 
 `LLM_PROVIDER=routed` answers with the rule-based parser and escalates to a model only below a confidence threshold, with
 per-tier timeouts and circuit breakers, a daily call budget, a rule that keeps e-mail/phone/address questions off hosted APIs,
-and per-response tier, tokens and list-price cost (`GET /llm/stats` for the counters). On the 74 questions with the local
-model it answered 93.2% (69/74) with **1 model call instead of 74**; a higher threshold sent more questions to the weaker
-model and lowered accuracy (81.1% with 34 calls, 75.7% with 60). Details, caveats and the unmeasured Groq case: [`docs/routing_eval.md`](docs/routing_eval.md).
+and per-response tier, tokens and list-price cost (`GET /llm/stats` for the counters). **It does not improve accuracy with the
+small model I could test**: on the original 74 questions it scored 93.2% with 1 model call, but those are the questions the rules
+were built on; on 35 new ones the rules score 60.0%, the small model 51.4%, and routing at best matches the rules. Whether a
+stronger model (Groq's Llama 3.3 70B) makes routing pay is unmeasured. Details and caveats: [`docs/routing_eval.md`](docs/routing_eval.md).
 
 ## Wallet risk (absorbs the former ChainScore and WalletGuard repos)
 
@@ -87,4 +89,4 @@ Full architecture, guardrail rule list, and every benchmark's methodology are do
 
 ## Test coverage
 
-66 unit tests, **63% line coverage** of `app/` (CI fails below 55%), including the router (escalation, fallback, breaker, timeout, privacy rule, budget). The Anthropic, Gemini and Groq providers need API keys and the local provider needs a GPU, so those are exercised only by the benchmark scripts.
+70 unit tests, **63% line coverage** of `app/` (CI fails below 55%), including the router (escalation, fallback, breaker, timeout, privacy rule, budget). The Anthropic, Gemini and Groq providers need API keys and the local provider needs a GPU, so those are exercised only by the benchmark scripts.

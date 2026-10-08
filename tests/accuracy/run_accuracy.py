@@ -46,7 +46,7 @@ from app.llm.factory import get_provider  # noqa: E402
 from app.llm.router import cost_usd  # noqa: E402
 from app.schema_store import get_schema_store  # noqa: E402
 
-TEST_SET_PATH = Path(__file__).parent / "test_set.jsonl"
+TEST_SET_PATH = Path(__file__).parent / os.environ.get("ACCURACY_SET", "test_set.jsonl")
 REPORT_PATH = Path(__file__).resolve().parents[2] / "reports" / "accuracy_report.json"
 
 
@@ -256,6 +256,8 @@ def main():
 
     # the mock provider keeps the canonical report name; real-LLM runs get their own file so they never overwrite it
     out_path = REPORT_PATH if args.provider == "mock" else REPORT_PATH.with_name(f"accuracy_report_{args.provider}.json")
+    if TEST_SET_PATH.name != "test_set.jsonl":  # e.g. ACCURACY_SET=heldout_set.jsonl: never overwrite the main reports
+        out_path = out_path.with_name(out_path.stem + "_" + TEST_SET_PATH.stem.replace("_set", "") + ".json")
     out_path.parent.mkdir(exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)

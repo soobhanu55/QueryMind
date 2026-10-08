@@ -1,0 +1,35 @@
+{"id": 1, "category": "simple", "question": "Which customers are based in Europe?", "reference_sql": "SELECT * FROM customers WHERE region = 'Europe'"}
+{"id": 2, "category": "simple", "question": "I need every product that falls under Software.", "reference_sql": "SELECT * FROM products WHERE category = 'Software'"}
+{"id": 3, "category": "simple", "question": "Give me the orders that were shipped.", "reference_sql": "SELECT * FROM orders WHERE status = 'shipped'"}
+{"id": 4, "category": "simple", "question": "Who are our SDRs?", "reference_sql": "SELECT * FROM employees WHERE role = 'SDR'"}
+{"id": 5, "category": "simple", "question": "Which payments are still pending?", "reference_sql": "SELECT * FROM payments WHERE status = 'pending'"}
+{"id": 6, "category": "simple", "question": "Pull up the SMB customers.", "reference_sql": "SELECT * FROM customers WHERE segment = 'SMB'"}
+{"id": 7, "category": "simple", "question": "Which orders came in online?", "reference_sql": "SELECT * FROM orders WHERE channel = 'online'"}
+{"id": 8, "category": "simple", "question": "How many customers do we have?", "reference_sql": "SELECT COUNT(*) FROM customers"}
+{"id": 9, "category": "simple", "question": "Show me the refunded payments.", "reference_sql": "SELECT * FROM payments WHERE status = 'refunded'"}
+{"id": 10, "category": "simple", "question": "Which employees work in the LATAM region?", "reference_sql": "SELECT * FROM employees WHERE region = 'LATAM'"}
+{"id": 11, "category": "aggregation", "question": "How many orders are there in total?", "reference_sql": "SELECT COUNT(*) FROM orders"}
+{"id": 12, "category": "aggregation", "question": "What's the average product price?", "reference_sql": "SELECT AVG(unit_price) FROM products"}
+{"id": 13, "category": "aggregation", "question": "What is the total amount of all paid payments?", "reference_sql": "SELECT SUM(amount) FROM payments WHERE status = 'paid'"}
+{"id": 14, "category": "aggregation", "question": "How many orders do we have for each status?", "reference_sql": "SELECT status, COUNT(*) FROM orders GROUP BY status"}
+{"id": 15, "category": "aggregation", "question": "Number of customers in each segment.", "reference_sql": "SELECT segment, COUNT(*) FROM customers GROUP BY segment"}
+{"id": 16, "category": "aggregation", "question": "What is the most expensive product we sell?", "reference_sql": "SELECT name, unit_price FROM products ORDER BY unit_price DESC LIMIT 1"}
+{"id": 17, "category": "aggregation", "question": "What is the average payment amount for each payment method?", "reference_sql": "SELECT method, AVG(amount) FROM payments GROUP BY method"}
+{"id": 18, "category": "aggregation", "question": "How many employees do we have in each role?", "reference_sql": "SELECT role, COUNT(*) FROM employees GROUP BY role"}
+{"id": 19, "category": "aggregation", "question": "What is the total quantity sold per product category?", "reference_sql": "SELECT p.category, SUM(oi.quantity) FROM order_items oi JOIN products p ON p.product_id = oi.product_id GROUP BY p.category"}
+{"id": 20, "category": "aggregation", "question": "Count the orders by channel.", "reference_sql": "SELECT channel, COUNT(*) FROM orders GROUP BY channel"}
+{"id": 21, "category": "aggregation", "question": "What is the largest discount ever given on an order item?", "reference_sql": "SELECT MAX(discount_pct) FROM order_items"}
+{"id": 22, "category": "aggregation", "question": "How many payments have failed?", "reference_sql": "SELECT COUNT(*) FROM payments WHERE status = 'failed'"}
+{"id": 23, "category": "aggregation", "question": "What is the average unit cost of our Electronics products?", "reference_sql": "SELECT AVG(unit_cost) FROM products WHERE category = 'Electronics'"}
+{"id": 24, "category": "join", "question": "Which customers have cancelled orders?", "reference_sql": "SELECT DISTINCT c.name FROM customers c JOIN orders o ON o.customer_id = c.customer_id WHERE o.status = 'cancelled'"}
+{"id": 25, "category": "join", "question": "Names of the employees who handled online orders.", "reference_sql": "SELECT DISTINCT e.name FROM employees e JOIN orders o ON o.employee_id = e.employee_id WHERE o.channel = 'online'"}
+{"id": 26, "category": "join", "question": "What products were bought by SMB customers?", "reference_sql": "SELECT DISTINCT p.name FROM products p JOIN order_items oi ON oi.product_id = p.product_id JOIN orders o ON o.order_id = oi.order_id JOIN customers c ON c.customer_id = o.customer_id WHERE c.segment = 'SMB'"}
+{"id": 27, "category": "join", "question": "Show the payment method used for each delivered order.", "reference_sql": "SELECT DISTINCT o.order_id, pay.method FROM orders o JOIN payments pay ON pay.order_id = o.order_id WHERE o.status = 'delivered'"}
+{"id": 28, "category": "join", "question": "List the customers who paid with PayPal.", "reference_sql": "SELECT DISTINCT c.name FROM customers c JOIN orders o ON o.customer_id = c.customer_id JOIN payments pay ON pay.order_id = o.order_id WHERE pay.method = 'paypal'"}
+{"id": 29, "category": "join", "question": "Which product categories did Enterprise customers buy?", "reference_sql": "SELECT DISTINCT p.category FROM products p JOIN order_items oi ON oi.product_id = p.product_id JOIN orders o ON o.order_id = oi.order_id JOIN customers c ON c.customer_id = o.customer_id WHERE c.segment = 'Enterprise'"}
+{"id": 30, "category": "join", "question": "Which sales managers handled returned orders?", "reference_sql": "SELECT DISTINCT e.name FROM employees e JOIN orders o ON o.employee_id = e.employee_id WHERE e.role = 'Sales Manager' AND o.status = 'returned'"}
+{"id": 31, "category": "join", "question": "Customers from LATAM who ordered by phone.", "reference_sql": "SELECT DISTINCT c.name FROM customers c JOIN orders o ON o.customer_id = c.customer_id WHERE c.region = 'LATAM' AND o.channel = 'phone'"}
+{"id": 32, "category": "join", "question": "What is the total revenue per customer region?", "reference_sql": "SELECT c.region, SUM(oi.quantity * oi.unit_price * (1 - oi.discount_pct / 100.0)) AS total_revenue FROM customers c JOIN orders o ON o.customer_id = c.customer_id JOIN order_items oi ON oi.order_id = o.order_id GROUP BY c.region"}
+{"id": 33, "category": "join", "question": "How many orders has each employee handled?", "reference_sql": "SELECT e.name, COUNT(*) FROM orders o JOIN employees e ON e.employee_id = o.employee_id GROUP BY e.name"}
+{"id": 34, "category": "join", "question": "What is the average quantity per order item for each product category?", "reference_sql": "SELECT p.category, AVG(oi.quantity) FROM order_items oi JOIN products p ON p.product_id = oi.product_id GROUP BY p.category"}
+{"id": 35, "category": "join", "question": "Which customers have had a payment refunded?", "reference_sql": "SELECT DISTINCT c.name FROM customers c JOIN orders o ON o.customer_id = c.customer_id JOIN payments pay ON pay.order_id = o.order_id WHERE pay.status = 'refunded'"}
